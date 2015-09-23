@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<s:Application
+        xmlns:fx="http://ns.adobe.com/mxml/2009"
+        xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
+        width="680" height="500"
+        creationComplete="creationCompleteHandler(event)">
+
+
+    <s:layout>
+        <s:VerticalLayout horizontalAlign="center" paddingLeft="10" paddingBottom="10" paddingRight="10"
+                          paddingTop="10"/>
+    </s:layout>
+
+    <s:ComboBox id="cbCameras" dataProvider="{cameraNames}" change="cbCameras_changeHandler(event)"/>
+    <mx:VideoDisplay id="videoDisplay" width="{CAMERA_WIDTH}" height="{CAMERA_HEIGHT}"/>
+    <mx:Button label="拍照保存" id="btnCaptureAndSave" click="btnCaptureAndSave_clickHandler(event)"/>
+
+    <fx:Script><![CDATA[
+        import mx.collections.ArrayCollection;
+        import mx.controls.Alert;
+        import mx.events.FlexEvent;
+        import mx.graphics.codec.PNGEncoder;
+
+        import spark.events.IndexChangeEvent;
+
+        use namespace mx_internal;
+
+        [Bindable]
+        private var cameraNames:ArrayCollection = new ArrayCollection();
+
+        private static const CAMERA_WIDTH:uint = 640;
+        private static const CAMERA_HEIGHT:uint = 360;
+
+
+        private function creationCompleteHandler(event:FlexEvent):void {
+
+            if (!Camera.isSupported) {
+                Alert.show("您的设备不支持摄像头");
+                return;
+            }
+
+            cameraNames.source = Camera.names;
+
+            if (cameraNames.length <= 0) {
+                Alert.show("找不到摄像头，请连接摄像头后重启本程序");
+                return;
+            }
+
+            cbCameras.selectedIndex = 0;
+            setCameraBySelected();
+        }
+
+        private function setCameraBySelected():void {
+            var camera:Camera = Camera.getCamera(cbCameras.selectedIndex.toString());
+            camera.setMode(CAMERA_WIDTH*2, CAMERA_HEIGHT*2, 30);
+            videoDisplay.attachCamera(camera);
+        }
+
+        private function cbCameras_changeHandler(event:IndexChangeEvent):void {
+            setCameraBySelected();
+        }
+
+        private function btnCaptureAndSave_clickHandler(event:MouseEvent):void {
+            var bd:BitmapData = new BitmapData(CAMERA_WIDTH, CAMERA_HEIGHT);
+            bd.draw(videoDisplay);
+
+            var f:FileReference = new FileReference();
+            f.save(new PNGEncoder().encode(bd), "photo.png");
+        }
+        ]]></fx:Script>
+</s:Application>
